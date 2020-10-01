@@ -61,21 +61,13 @@ to quickly create a Cobra application.`,
 	},
 }
 
+
 type routeGuideServer struct {
 	savedFeatures []*pb.Feature // read-only after initialized
 
 	mu         sync.Mutex // protects routeNotes
 	routeNotes map[string][]*pb.RouteNote
 }
-
-/*func (s *routeGuideServer) Svc() *pb.RouteGuideService {
-	return &pb.RouteGuideService{
-		GetFeature:   s.GetFeature,
-		ListFeatures: s.ListFeatures,
-		RecordRoute:  s.RecordRoute,
-		RouteChat:    s.RouteChat,
-	}
-}*/
 
 // GetFeature returns the feature at the given point.
 func (s *routeGuideServer) GetFeature(ctx context.Context, point *pb.Point) (*pb.Feature, error) {
