@@ -18,15 +18,20 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/gorilla/websocket"
+	"github.com/marcosQuesada/wrpc/pkg/ws"
 	"google.golang.org/grpc"
 	pb "google.golang.org/grpc/examples/route_guide/routeguide"
 	"io"
 	"log"
 	"math/rand"
+	"net"
+	"net/url"
 	"time"
 
 	"github.com/spf13/cobra"
 )
+
 
 // clientCmd represents the client command
 var clientCmd = &cobra.Command{
@@ -40,13 +45,29 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("client called")
-		var opts = []grpc.DialOption{grpc.WithInsecure(),  grpc.WithBlock()}
+
+		var opts = []grpc.DialOption{
+			grpc.WithInsecure(),
+			grpc.WithBlock(),
+			grpc.WithContextDialer(func(ctx context.Context, host string) (net.Conn, error) {
+				u := url.URL{Scheme: "ws", Host: host, Path: "/ws"}
+				log.Printf("connecting to %s", u.String())
+				c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+				if err != nil {
+					log.Printf("Error dialing, %v \n", err)
+					return nil, err
+				}
+
+				return ws.NewConn(c), nil
+			}),
+		}
 
 		conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), opts...)
 		if err != nil {
 			log.Fatalf("fail to dial: %v", err)
 		}
 		defer conn.Close()
+
 		client := pb.NewRouteGuideClient(conn)
 
 		// Looking for a valid feature
@@ -68,7 +89,6 @@ to quickly create a Cobra application.`,
 		runRouteChat(client)
 	},
 }
-
 func init() {
 	rootCmd.AddCommand(clientCmd)
 }

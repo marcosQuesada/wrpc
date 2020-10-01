@@ -23,6 +23,7 @@ package bufconn
 import (
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"sync"
 	"time"
@@ -95,6 +96,15 @@ func (l *Listener) Dial() (net.Conn, error) {
 	}
 }
 
+func (l *Listener) Handle(conn net.Conn) error {
+	select {
+	case <-l.done:
+		return errClosed
+	case l.ch <- conn:
+		return  nil
+	}
+}
+
 type pipe struct {
 	mu sync.Mutex
 
@@ -143,6 +153,7 @@ func (p *pipe) full() bool {
 }
 
 func (p *pipe) Read(b []byte) (n int, err error) {
+	log.Printf("Pipe Read buffer size %d", len(b))
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	// Block until p has data.
@@ -180,6 +191,7 @@ func (p *pipe) Read(b []byte) (n int, err error) {
 }
 
 func (p *pipe) Write(b []byte) (n int, err error) {
+	log.Printf("Pipe Write size %d", len(b))
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.closed {
