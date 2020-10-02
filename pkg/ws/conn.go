@@ -7,11 +7,11 @@ import (
 	"time"
 )
 
-type Conn struct{
+type Conn struct {
 	conn *websocket.Conn
 }
 
-func NewConn(conn *websocket.Conn) *Conn {
+func newConn(conn *websocket.Conn) *Conn {
 	return &Conn{
 		conn: conn,
 	}

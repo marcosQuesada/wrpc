@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/marcosQuesada/wrpc/pkg/route_guide/routeguide"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,26 +15,25 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-
 type routeGuideServer struct {
-	savedFeatures []*Feature // read-only after initialized
-	routeNotes map[string][]*RouteNote
-	mu         sync.Mutex // protects routeNotes
+	savedFeatures []*routeguide.Feature // read-only after initialized
+	routeNotes    map[string][]*routeguide.RouteNote
+	mu            sync.Mutex // protects routeNotes
 }
 
 // GetFeature returns the feature at the given point.
-func (s *routeGuideServer) GetFeature(ctx context.Context, point *Point) (*Feature, error) {
+func (s *routeGuideServer) GetFeature(ctx context.Context, point *routeguide.Point) (*routeguide.Feature, error) {
 	for _, feature := range s.savedFeatures {
 		if proto.Equal(feature.Location, point) {
 			return feature, nil
 		}
 	}
 	// No feature was found, return an unnamed feature
-	return &Feature{Location: point}, nil
+	return &routeguide.Feature{Location: point}, nil
 }
 
 // ListFeatures lists all features contained within the given bounding Rectangle.
-func (s *routeGuideServer) ListFeatures(rect *Rectangle, stream RouteGuide_ListFeaturesServer) error {
+func (s *routeGuideServer) ListFeatures(rect *routeguide.Rectangle, stream routeguide.RouteGuide_ListFeaturesServer) error {
 	for _, feature := range s.savedFeatures {
 		if inRange(feature.Location, rect) {
 			if err := stream.Send(feature); err != nil {
@@ -49,15 +49,15 @@ func (s *routeGuideServer) ListFeatures(rect *Rectangle, stream RouteGuide_ListF
 // It gets a stream of points, and responds with statistics about the "trip":
 // number of points,  number of known features visited, total distance traveled, and
 // total time spent.
-func (s *routeGuideServer) RecordRoute(stream RouteGuide_RecordRouteServer) error {
+func (s *routeGuideServer) RecordRoute(stream routeguide.RouteGuide_RecordRouteServer) error {
 	var pointCount, featureCount, distance int32
-	var lastPoint *Point
+	var lastPoint *routeguide.Point
 	startTime := time.Now()
 	for {
 		point, err := stream.Recv()
 		if err == io.EOF {
 			endTime := time.Now()
-			return stream.SendAndClose(&RouteSummary{
+			return stream.SendAndClose(&routeguide.RouteSummary{
 				PointCount:   pointCount,
 				FeatureCount: featureCount,
 				Distance:     distance,
@@ -82,7 +82,7 @@ func (s *routeGuideServer) RecordRoute(stream RouteGuide_RecordRouteServer) erro
 
 // RouteChat receives a stream of message/location pairs, and responds with a stream of all
 // previous messages at each of those locations.
-func (s *routeGuideServer) RouteChat(stream RouteGuide_RouteChatServer) error {
+func (s *routeGuideServer) RouteChat(stream routeguide.RouteGuide_RouteChatServer) error {
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
@@ -98,7 +98,7 @@ func (s *routeGuideServer) RouteChat(stream RouteGuide_RouteChatServer) error {
 		// Note: this copy prevents blocking other clients while serving this one.
 		// We don't need to do a deep copy, because elements in the slice are
 		// insert-only and never modified.
-		rn := make([]*RouteNote, len(s.routeNotes[key]))
+		rn := make([]*routeguide.RouteNote, len(s.routeNotes[key]))
 		copy(rn, s.routeNotes[key])
 		s.mu.Unlock()
 
@@ -133,7 +133,7 @@ func toRadians(num float64) float64 {
 
 // calcDistance calculates the distance between two points using the "haversine" formula.
 // The formula is based on http://mathforum.org/library/drmath/view/51879.html.
-func calcDistance(p1 *Point, p2 *Point) int32 {
+func calcDistance(p1 *routeguide.Point, p2 *routeguide.Point) int32 {
 	const CordFactor float64 = 1e7
 	const R = float64(6371000) // earth radius in metres
 	lat1 := toRadians(float64(p1.Latitude) / CordFactor)
@@ -152,7 +152,7 @@ func calcDistance(p1 *Point, p2 *Point) int32 {
 	return int32(distance)
 }
 
-func inRange(point *Point, rect *Rectangle) bool {
+func inRange(point *routeguide.Point, rect *routeguide.Rectangle) bool {
 	left := math.Min(float64(rect.Lo.Longitude), float64(rect.Hi.Longitude))
 	right := math.Max(float64(rect.Lo.Longitude), float64(rect.Hi.Longitude))
 	top := math.Max(float64(rect.Lo.Latitude), float64(rect.Hi.Latitude))
@@ -167,17 +167,17 @@ func inRange(point *Point, rect *Rectangle) bool {
 	return false
 }
 
-func serialize(point *Point) string {
+func serialize(point *routeguide.Point) string {
 	return fmt.Sprintf("%d %d", point.Latitude, point.Longitude)
 }
 
 func NewServer() *routeGuideServer {
-	s := &routeGuideServer{routeNotes: make(map[string][]*RouteNote)}
+	s := &routeGuideServer{routeNotes: make(map[string][]*routeguide.RouteNote)}
 	s.loadFeatures("")
 	return s
 }
-func (s *routeGuideServer) Svc() *RouteGuideService {
-	return &RouteGuideService{
+func (s *routeGuideServer) Svc() *routeguide.RouteGuideService {
+	return &routeguide.RouteGuideService{
 		GetFeature:   s.GetFeature,
 		ListFeatures: s.ListFeatures,
 		RecordRoute:  s.RecordRoute,
@@ -788,4 +788,3 @@ var exampleData = []byte(`[{
     },
     "name": "3 Hasta Way, Newton, NJ 07860, USA"
 }]`)
-
