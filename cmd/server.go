@@ -21,7 +21,7 @@ var serverCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("server called")
 
-		listener := bufconn.Listen()
+		listener := bufconn.NewListener()
 		srv := ws.NewServer(listener)
 
 		var opts = []grpc.ServerOption{}

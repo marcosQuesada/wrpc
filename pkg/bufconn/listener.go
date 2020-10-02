@@ -16,9 +16,9 @@ type Listener struct {
 
 var errClosed = fmt.Errorf("closed")
 
-// Listen returns a Listener that can only be contacted by its own Dialers and
+// NewListener returns a Listener that can only be contacted by its own Dialers and
 // creates buffered connections between the two.
-func Listen() *Listener {
+func NewListener() *Listener {
 	return &Listener{ch: make(chan net.Conn), done: make(chan struct{})}
 }
 
