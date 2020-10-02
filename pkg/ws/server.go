@@ -32,14 +32,14 @@ func (f *server) Handler(w http.ResponseWriter, r *http.Request) {
 	defer log.Info("Handler goes down")
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Errorf("upgrade error:", err)
+		log.Errorf("upgrade error: %v", err)
 		return
 	}
 
 	var conn net.Conn = newConn(c)
 	inBound, err := f.listener.Connect()
 	if err != nil {
-		log.Errorf("dial error:", err)
+		log.Errorf("connect error: %v", err)
 		return
 	}
 
