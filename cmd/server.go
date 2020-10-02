@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/websocket"
@@ -32,11 +31,9 @@ import (
 	"sync"
 )
 
-var saddr = flag.String("saddr", "localhost:8080", "http service address")
+var saddr string
 
 var upgrader = websocket.Upgrader{} // use default options
-
-var port int = 8080
 
 // serverCmd represents the xserver command
 var serverCmd = &cobra.Command{
@@ -54,7 +51,7 @@ to quickly create a Cobra application.`,
 		buffSpace := 10
 		lis := &foo{listener: bufconn.Listen(buffSpace)}
 
-		var opts =  []grpc.ServerOption{
+		var opts = []grpc.ServerOption{
 			grpc.StreamInterceptor(lis.streamInterceptor),
 			grpc.UnaryInterceptor(lis.unaryInterceptor),
 		}
@@ -63,17 +60,18 @@ to quickly create a Cobra application.`,
 		go grpcServer.Serve(lis.listener)
 
 		http.HandleFunc("/ws", lis.handler)
-		log.Fatal(http.ListenAndServe(*saddr, nil))
+		log.Fatal(http.ListenAndServe(saddr, nil))
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
+	serverCmd.Flags().StringVarP(&saddr, "addr", "a", "localhost:8080", "Remote Host")
 }
 
 type foo struct {
 	listener *bufconn.Listener
-	mutex sync.Mutex
+	mutex    sync.Mutex
 }
 
 func (f *foo) handler(w http.ResponseWriter, r *http.Request) {
@@ -99,11 +97,11 @@ func (f *foo) handler(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		for {
-			_, data, err := c.ReadMessage()
+			_, data, err := c.ReadMessage() //@TODO: Must be conn.Read
 			if err != nil {
 				log.Println("Error ReadMessage:", err)
-				inBound.Close()
-				outBound.Close()
+				_ = inBound.Close()
+				_ = outBound.Close()
 
 				break
 			}
@@ -133,16 +131,14 @@ func (f *foo) handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func(f *foo) unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func (f *foo) unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	log.Printf("Unary Interceptor begin \n")
 	defer log.Printf("Unary Interceptor done \n")
-
-	//spew.Dump(info)
 
 	return handler(ctx, req)
 }
 
-func(f *foo) streamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error{
+func (f *foo) streamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	log.Printf("Stream Interceptor begin \n")
 	defer log.Printf("Stream Interceptor done \n")
 

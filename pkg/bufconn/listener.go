@@ -272,9 +272,11 @@ func (c *conn) Close() error {
 }
 
 func (c *conn) SetDeadline(t time.Time) error {
-	c.SetReadDeadline(t)
-	c.SetWriteDeadline(t)
-	return nil
+	err := c.SetReadDeadline(t)
+	if err != nil {
+		return err
+	}
+	return c.SetWriteDeadline(t)
 }
 
 func (c *conn) SetReadDeadline(t time.Time) error {

@@ -32,17 +32,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var host string
 
 // clientCmd represents the client command
 var clientCmd = &cobra.Command{
 	Use:   "client",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "gRPC client in top of websockets",
+	Long: `gRPC client in top of websockets`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("client called")
 
@@ -62,7 +58,7 @@ to quickly create a Cobra application.`,
 			}),
 		}
 
-		conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), opts...)
+		conn, err := grpc.Dial(host, opts...)
 		if err != nil {
 			log.Fatalf("fail to dial: %v", err)
 		}
@@ -91,6 +87,7 @@ to quickly create a Cobra application.`,
 }
 func init() {
 	rootCmd.AddCommand(clientCmd)
+	clientCmd.Flags().StringVarP(&host, "host", "s", "localhost:8080", "Remote Host")
 }
 
 // printFeature gets the feature for the given point.
