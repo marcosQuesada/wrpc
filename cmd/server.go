@@ -24,10 +24,7 @@ var serverCmd = &cobra.Command{
 		listener := bufconn.Listen()
 		srv := ws.NewServer(listener)
 
-		var opts = []grpc.ServerOption{
-			grpc.StreamInterceptor(listener.StreamInterceptor),
-			grpc.UnaryInterceptor(listener.UnaryInterceptor),
-		}
+		var opts = []grpc.ServerOption{}
 
 		grpcServer := grpc.NewServer(opts...)
 		routeguide.RegisterRouteGuideService(grpcServer, pb.NewServer().Svc())

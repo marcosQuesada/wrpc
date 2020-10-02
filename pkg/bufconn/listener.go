@@ -1,10 +1,7 @@
 package bufconn
 
 import (
-	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 	"net"
 	"sync"
 )
@@ -62,23 +59,6 @@ func (l *Listener) Connect() (net.Conn, error) {
 	case l.ch <- conn:
 		return inBound, nil
 	}
-}
-
-// UnaryInterceptor server unary interceptor
-func (l *Listener) UnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-	log.Info("Unary Interceptor begin")
-	defer log.Printf("Unary Interceptor done \n")
-
-	return handler(ctx, req)
-}
-
-// StreamInterceptor server stream interceptor
-func (l *Listener) StreamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	log.Info("Stream Interceptor begin")
-	defer log.Info("Stream Interceptor done")
-
-	//@TODO: On long running tasks probably we need to add concurrency
-	return handler(srv, ss)
 }
 
 type addr struct{}
