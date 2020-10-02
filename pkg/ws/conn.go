@@ -4,12 +4,14 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net"
+	"sync"
 	"time"
 )
 
 // Conn decorates websocket.Conn as net.Conn
 type Conn struct {
 	conn *websocket.Conn
+	mutex sync.Mutex
 }
 
 func newConn(conn *websocket.Conn) *Conn {
@@ -22,7 +24,6 @@ func newConn(conn *websocket.Conn) *Conn {
 func (c *Conn) Read(b []byte) (n int, err error) {
 	_, data, err := c.conn.ReadMessage()
 	if err != nil {
-		log.Errorf("Read conn err %v", err)
 		return 0, err
 	}
 
@@ -33,6 +34,9 @@ func (c *Conn) Read(b []byte) (n int, err error) {
 
 // Write adapter method
 func (c *Conn) Write(b []byte) (n int, err error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	err = c.conn.WriteMessage(websocket.BinaryMessage, b)
 
 	return len(b), err
