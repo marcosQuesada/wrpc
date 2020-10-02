@@ -24,7 +24,7 @@ import (
 	"github.com/marcosQuesada/wrpc/pkg/ws"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	pb "google.golang.org/grpc/examples/route_guide/routeguide"
+	pb "github.com/marcosQuesada/wrpc/pkg/route_guide"
 	"log"
 	"net"
 	"net/http"
@@ -56,7 +56,7 @@ to quickly create a Cobra application.`,
 			grpc.UnaryInterceptor(lis.unaryInterceptor),
 		}
 		grpcServer := grpc.NewServer(opts...)
-		pb.RegisterRouteGuideServer(grpcServer, newServer())
+		pb.RegisterRouteGuideService(grpcServer, pb.NewServer().Svc())
 		go grpcServer.Serve(lis.listener)
 
 		http.HandleFunc("/ws", lis.handler)

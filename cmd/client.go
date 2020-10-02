@@ -21,7 +21,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/marcosQuesada/wrpc/pkg/ws"
 	"google.golang.org/grpc"
-	pb "google.golang.org/grpc/examples/route_guide/routeguide"
+	pb "github.com/marcosQuesada/wrpc/pkg/route_guide"
 	"io"
 	"log"
 	"math/rand"
