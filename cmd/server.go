@@ -28,38 +28,35 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"sync"
 )
+
+var defaultBufSize  = 32 * 1024
 
 var saddr string
 
 var upgrader = websocket.Upgrader{} // use default options
 
-// serverCmd represents the xserver command
+// serverCmd represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "gRPC server in top of websocket transport",
+	Long: `gRPC server in top of websocket transport.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("server called")
 
-		buffSpace := 10
-		lis := &foo{listener: bufconn.Listen(buffSpace)}
+		listener := bufconn.Listen()
+		srv := newServer(listener)
 
 		var opts = []grpc.ServerOption{
-			grpc.StreamInterceptor(lis.streamInterceptor),
-			grpc.UnaryInterceptor(lis.unaryInterceptor),
+			grpc.StreamInterceptor(srv.streamInterceptor),
+			grpc.UnaryInterceptor(srv.unaryInterceptor),
 		}
+
 		grpcServer := grpc.NewServer(opts...)
 		pb.RegisterRouteGuideService(grpcServer, pb.NewServer().Svc())
-		go grpcServer.Serve(lis.listener)
+		go grpcServer.Serve(listener)
 
-		http.HandleFunc("/ws", lis.handler)
+		http.HandleFunc("/ws", srv.handler)
 		log.Fatal(http.ListenAndServe(saddr, nil))
 	},
 }
@@ -69,35 +66,37 @@ func init() {
 	serverCmd.Flags().StringVarP(&saddr, "addr", "a", "localhost:8080", "Remote Host")
 }
 
-type foo struct {
+type server struct {
 	listener *bufconn.Listener
-	mutex    sync.Mutex
 }
 
-func (f *foo) handler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("On Handle \n")
+func newServer(l *bufconn.Listener) *server{
+	return &server{
+		listener: l,
+	}
+}
+
+func (f *server) handler(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Print("upgrade:", err)
+		log.Print("upgrade error:", err)
 		return
 	}
-	defer c.Close()
-
-	log.Printf("Upgraded \n")
 
 	var conn net.Conn = ws.NewConn(c)
 	inBound, outBound := net.Pipe()
 
 	err = f.listener.Handle(outBound)
 	if err != nil {
-		log.Print("dial:", err)
+		log.Print("dial error:", err)
 		return
 	}
 	defer conn.Close()
 
 	go func() {
 		for {
-			_, data, err := c.ReadMessage() //@TODO: Must be conn.Read
+			data := make([]byte, defaultBufSize)
+			n, err := conn.Read(data)
 			if err != nil {
 				log.Println("Error ReadMessage:", err)
 				_ = inBound.Close()
@@ -106,16 +105,16 @@ func (f *foo) handler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 
-			_, err = inBound.Write(data)
+			_, err = inBound.Write(data[:n])
 			if err != nil {
-				log.Println("write:", err)
+				log.Println("inbound write error:", err)
 				break
 			}
 		}
 	}()
 
 	for {
-		rsp := make([]byte, 1024) //@TODO: HERE
+		rsp := make([]byte, defaultBufSize)
 		n, err := inBound.Read(rsp)
 		if err != nil {
 			log.Println("readAll:", err)
@@ -131,14 +130,14 @@ func (f *foo) handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (f *foo) unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func (f *server) unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	log.Printf("Unary Interceptor begin \n")
 	defer log.Printf("Unary Interceptor done \n")
 
 	return handler(ctx, req)
 }
 
-func (f *foo) streamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func (f *server) streamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	log.Printf("Stream Interceptor begin \n")
 	defer log.Printf("Stream Interceptor done \n")
 

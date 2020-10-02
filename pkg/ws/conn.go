@@ -17,10 +17,10 @@ func NewConn(conn *websocket.Conn) *Conn {
 	}
 }
 
-//@TODO: FIX
 func (c *Conn) Read(b []byte) (n int, err error) {
 	_, data, err := c.conn.ReadMessage()
 	if err != nil {
+		log.Printf("Read conn err %v", err)
 		return 0, err
 	}
 
