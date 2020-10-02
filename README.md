@@ -1,4 +1,4 @@
-# [WIP]wRPC
+# wRPC
 
 gRPC on top of Websockets, naive implementation.
 
