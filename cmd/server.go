@@ -1,14 +1,13 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/marcosQuesada/wrpc/pkg/bufconn"
 	pb "github.com/marcosQuesada/wrpc/pkg/route_guide"
 	"github.com/marcosQuesada/wrpc/pkg/route_guide/routeguide"
 	"github.com/marcosQuesada/wrpc/pkg/ws"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	"log"
 	"net/http"
 )
 
@@ -20,7 +19,7 @@ var serverCmd = &cobra.Command{
 	Short: "gRPC server in top of websocket transport",
 	Long:  `gRPC server in top of websocket transport.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("server called")
+		log.Info("server called")
 
 		listener := bufconn.Listen()
 		srv := ws.NewServer(listener)

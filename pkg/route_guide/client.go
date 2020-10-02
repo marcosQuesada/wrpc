@@ -3,8 +3,8 @@ package routeguide
 import (
 	"context"
 	"github.com/marcosQuesada/wrpc/pkg/route_guide/routeguide"
+	log "github.com/sirupsen/logrus"
 	"io"
-	"log"
 	"math/rand"
 	"time"
 )

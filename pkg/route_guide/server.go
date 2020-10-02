@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/marcosQuesada/wrpc/pkg/route_guide/routeguide"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
-	"log"
 	"math"
 	"sync"
 	"time"
@@ -26,6 +26,7 @@ func NewServer() *routeGuideServer {
 	s.loadFeatures("")
 	return s
 }
+
 // GetFeature returns the feature at the given point.
 func (s *routeGuideServer) GetFeature(ctx context.Context, point *routeguide.Point) (*routeguide.Feature, error) {
 	for _, feature := range s.savedFeatures {

@@ -3,9 +3,8 @@ package bufconn
 import (
 	"context"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"sync"
 )
@@ -67,7 +66,7 @@ func (l *Listener) Connect() (net.Conn, error) {
 
 // UnaryInterceptor server unary interceptor
 func (l *Listener) UnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-	log.Printf("Unary Interceptor begin \n")
+	log.Info("Unary Interceptor begin")
 	defer log.Printf("Unary Interceptor done \n")
 
 	return handler(ctx, req)
@@ -75,11 +74,10 @@ func (l *Listener) UnaryInterceptor(ctx context.Context, req interface{}, info *
 
 // StreamInterceptor server stream interceptor
 func (l *Listener) StreamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	log.Printf("Stream Interceptor begin \n")
-	defer log.Printf("Stream Interceptor done \n")
+	log.Info("Stream Interceptor begin")
+	defer log.Info("Stream Interceptor done")
 
 	//@TODO: On long running tasks probably we need to add concurrency
-	spew.Dump(info)
 	return handler(srv, ss)
 }
 

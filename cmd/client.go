@@ -6,8 +6,8 @@ import (
 	pb "github.com/marcosQuesada/wrpc/pkg/route_guide"
 	"github.com/marcosQuesada/wrpc/pkg/route_guide/routeguide"
 	"github.com/marcosQuesada/wrpc/pkg/ws"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"net/url"
 

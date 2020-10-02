@@ -2,7 +2,7 @@ package ws
 
 import (
 	"github.com/gorilla/websocket"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"net/url"
 )
@@ -12,7 +12,7 @@ func NewClient(u url.URL) (net.Conn, error) {
 	log.Printf("connecting to %s", u.String())
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Printf("Error dialing, %v \n", err)
+		log.Errorf("Error dialing, %v \n", err)
 		return nil, err
 	}
 
