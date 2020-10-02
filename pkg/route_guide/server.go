@@ -21,6 +21,11 @@ type routeGuideServer struct {
 	mu            sync.Mutex // protects routeNotes
 }
 
+func NewServer() *routeGuideServer {
+	s := &routeGuideServer{routeNotes: make(map[string][]*routeguide.RouteNote)}
+	s.loadFeatures("")
+	return s
+}
 // GetFeature returns the feature at the given point.
 func (s *routeGuideServer) GetFeature(ctx context.Context, point *routeguide.Point) (*routeguide.Feature, error) {
 	for _, feature := range s.savedFeatures {
@@ -110,6 +115,15 @@ func (s *routeGuideServer) RouteChat(stream routeguide.RouteGuide_RouteChatServe
 	}
 }
 
+func (s *routeGuideServer) Svc() *routeguide.RouteGuideService {
+	return &routeguide.RouteGuideService{
+		GetFeature:   s.GetFeature,
+		ListFeatures: s.ListFeatures,
+		RecordRoute:  s.RecordRoute,
+		RouteChat:    s.RouteChat,
+	}
+}
+
 // loadFeatures loads features from a JSON file.
 func (s *routeGuideServer) loadFeatures(filePath string) {
 	var data []byte
@@ -169,20 +183,6 @@ func inRange(point *routeguide.Point, rect *routeguide.Rectangle) bool {
 
 func serialize(point *routeguide.Point) string {
 	return fmt.Sprintf("%d %d", point.Latitude, point.Longitude)
-}
-
-func NewServer() *routeGuideServer {
-	s := &routeGuideServer{routeNotes: make(map[string][]*routeguide.RouteNote)}
-	s.loadFeatures("")
-	return s
-}
-func (s *routeGuideServer) Svc() *routeguide.RouteGuideService {
-	return &routeguide.RouteGuideService{
-		GetFeature:   s.GetFeature,
-		ListFeatures: s.ListFeatures,
-		RecordRoute:  s.RecordRoute,
-		RouteChat:    s.RouteChat,
-	}
 }
 
 // exampleData is a copy of testdata/route_guide_db.json. It's to avoid
